@@ -10,16 +10,6 @@
 		function drawChartPoint() {
 			var data = new google.visualization.DataTable();
 			data.addColumn('number', 'x');
-			data.addColumn('number', 'customers');
-			data.addColumn({type:'string', role:'tooltip'}); // annotation role col.
-			data.addColumn('number', 'depot');
-			data.addColumn({type:'string', role:'tooltip'}); // annotation role col.
-
-			var infos = new google.visualization.DataTable();
-			infos.addColumn('number', 'twOpen');
-			infos.addColumn('number', 'twClose');
-			infos.addColumn('number', 'service');
-			infos.addColumn('number', 'demand');
 
 			<?php
 				$instance = "c101";
@@ -49,11 +39,27 @@
 					$lines_number = explode(" ", fgets($mySolutionFile))[1];
 					for($i = 0; $i < $lines_number; $i++) {
 						$solution_points .=  ' '.trim(fgets($mySolutionFile)).' 0';
+						echo"			data.addColumn('number', 'customers series ".$i."');\n";
+						echo"			data.addColumn({type:'string', role:'tooltip'});\n";
 					}
 					$solution_points = explode(' ', trim($solution_points));
 					//echo "//".implode('_', $solution_points)."\n";
+				} else {
+					echo"			data.addColumn('number', 'customers');\n";
+					echo"			data.addColumn({type:'string', role:'tooltip'});\n";
 				}
+			?>
 
+			data.addColumn('number', 'depot');
+			data.addColumn({type:'string', role:'tooltip'}); // annotation role col.
+
+			var infos = new google.visualization.DataTable();
+			infos.addColumn('number', 'twOpen');
+			infos.addColumn('number', 'twClose');
+			infos.addColumn('number', 'service');
+			infos.addColumn('number', 'demand');
+
+			<?php
 				if ($solution) {
 					$complete_instance = substr(fread($myInstanceFile, filesize("data/Solomon/$instance.txt")), 90);
 					fclose($myInstanceFile);
@@ -64,6 +70,8 @@
 					$n = $linearray[1]; $q = $linearray[2];
 					for ($i = 0; $i < 4; $i++) fgets($myInstanceFile);
 					$max_x = 0; $max_y = 0;
+					$current_series = -1;
+					$reached_zero = false;
 					foreach ($solution_points as $point) {
 						// Find corresponding line in instance file
 						preg_match("/\n[ ]{1,10} ".$point." ([^\n]{1,200})/", $complete_instance, $match);
@@ -76,12 +84,27 @@
 
 						if($id == 0 && $twClose == 0) break;
 						if($id == 0) {
-							$depot_point = "          data.addRow([$x,null,null,$y,'Depot']);\n";
-							echo "          data.addRow([$x,$y,'Depot',null,null]);\n";
+							$depot_point = "          data.addRow([$x,".str_repeat("null,null,", $lines_number)."$y,'Depot']);\n";
+							//echo "          data.addRow([$x,$y,'Depot'".str_repeat(",null,null", $lines_number)."]);\n";
+							if ($current_series == -1) {
+								echo "          data.addRow([$x".str_repeat(",null,null", $current_series).",$y,'Depot'".str_repeat(",null,null", $lines_number)."]);\n";	
+							} else {
+								if ($reached_zero) {
+									echo "          data.addRow([$x".str_repeat(",null,null", $current_series + 1).",$y,'Depot'".str_repeat(",null,null", $lines_number - ($current_series + 1))."]);\n";
+								} else {
+									echo "          data.addRow([$x".str_repeat(",null,null", $current_series).",$y,'Depot'".str_repeat(",null,null", $lines_number - $current_series)."]);\n";
+								}
+							}
+							$reached_zero = true;
 							//echo $back_to_depot;
 						}
 						else {
-							echo "          data.addRow([$x,$y,'Customer:$id',null,null]);\n";
+							if ($reached_zero) {
+								$current_series++;
+								$reached_zero = false;
+							}
+							echo "//".$current_series."\n";
+							echo "          data.addRow([$x".str_repeat(",null,null", $current_series).",$y,'Customer:$id'".str_repeat(",null,null", $lines_number - $current_series)."]);\n";
 							echo "          infos.addRow([$twOpen, $twClose, $service, $demand]);\n";
 						}
 					}
@@ -133,14 +156,16 @@
 				hAxis: {viewWindow: {min: 0, max: <?php echo $max_y; ?>} , baselineColor:'white', textStyle:{color:'white'}},
 				pointSize: 5,
 				series: {
-					0: {
-						// Display line only if solution was found
-						lineWidth: <?php if ($solution) { echo "1"; } else { echo "0";} ?>
-					},
-					1: {
-						pointSize: 10,
-						lineWidth: <?php if ($solution) { echo "1"; } else { echo "0";} ?>
-					}
+					<?php
+						if ($solution) {
+							for ($i = 0; $i < $lines_number; $i++) {
+								echo $i.": { lineWidth: 1 },";
+							}
+							echo $lines_number.": { pointSize: 10, lineWidth: 1 }";
+						} else {
+							echo "0: { lineWidth: 0 }, 1: { pointSize: 10, lineWidth: 0 }";
+						}
+					?>
 				}
 			};
 
