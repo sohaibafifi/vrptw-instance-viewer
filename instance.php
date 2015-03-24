@@ -24,33 +24,106 @@
 			<?php
 				$instance = "c101";
 				if(isset($_GET["instance"]) && strcmp(dirname($_GET["instance"]) ,".")==0) $instance = $_GET["instance"];
-				$myInstanceFile = fopen("data/Solomon/$instance.txt", "r") or die("Unable to open file!");
-				$name = trim( fgets($myInstanceFile) );
-				for ($i = 1; $i < 4; $i++) fgets($myInstanceFile);
-				$linearray = explode(" ", preg_replace('/\s+/', ' ',fgets($myInstanceFile)));
-				$n = $linearray[1]; $q = $linearray[2];
-				for ($i = 0; $i < 4; $i++) fgets($myInstanceFile);
-				$max_x = 0; $max_y = 0;
-				while(!feof($myInstanceFile)) {
-					$linearray = explode(" ", preg_replace('/\s+/', ' ', fgets($myInstanceFile)));
-					$id = $linearray[1];
-					$x = $linearray[2]; $max_x = max($x, $max_x);
-					$y = $linearray[3]; $max_y = max($y, $max_y);
-					$demand = $linearray[4];   $twOpen = $linearray[5];
-					$twClose = $linearray[6];  $service = $linearray[7];
-					if($id == 0 && $twClose == 0) break;
-					if($id == 0) {
-						echo "          data.addRow([$x,null,null,$y,'Depot']);\n";
-						$back_to_depot = "          data.addRow([$x,$y,'Depot',null,null]);\n";
-						echo $back_to_depot;
-					}
-					else {
-						echo "          data.addRow([$x,$y,'Customer:$id',null,null]);\n";
-						echo "          infos.addRow([$twOpen, $twClose, $service, $demand]);\n";
+				$myInstanceFile = fopen("data/Solomon/$instance.txt", "r") or die('Unable to open file');
+				$mySolutionFile = fopen("data/Solutions/$instance.txt", "r");
+				if ($mySolutionFile) {
+					$solution = true;
+				} else {
+					$mySolutionFile = fopen("data/Solutions/".$instance."t.txt", "r");
+					if($mySolutionFile) {
+						$solution = true;
+					} else {
+						$mySolutionFile = fopen("data/Solutions/".$instance."_sol.txt", "r");
+						if ($mySolutionFile) {
+							$solution = true;
+						} else {
+							$solution = false;
+						}
 					}
 				}
-				echo $back_to_depot;
-				fclose($myInstanceFile);
+
+				if($solution){
+					// Let go of first line in solution
+					fgets($mySolutionFile);
+					$solution_points = '';
+					$lines_number = explode(" ", fgets($mySolutionFile))[1];
+					for($i = 0; $i < $lines_number; $i++) {
+						$solution_points .=  ' '.trim(fgets($mySolutionFile)).' 0';
+					}
+					$solution_points = explode(' ', trim($solution_points));
+					//echo "//".implode('_', $solution_points)."\n";
+				}
+
+				if ($solution) {
+					$complete_instance = substr(fread($myInstanceFile, filesize("data/Solomon/$instance.txt")), 90);
+					fclose($myInstanceFile);
+					$myInstanceFile = fopen("data/Solomon/$instance.txt", "r") or die('Unable to open file');
+					$name = trim( fgets($myInstanceFile) );
+					for ($i = 1; $i < 4; $i++) fgets($myInstanceFile);
+					$linearray = explode(" ", preg_replace('/\s+/', ' ',fgets($myInstanceFile)));
+					$n = $linearray[1]; $q = $linearray[2];
+					for ($i = 0; $i < 4; $i++) fgets($myInstanceFile);
+					$max_x = 0; $max_y = 0;
+					foreach ($solution_points as $point) {
+						// Find corresponding line in instance file
+						preg_match("/\n[ ]{1,10} ".$point." ([^\n]{1,200})/", $complete_instance, $match);
+						$linearray = explode(" ", preg_replace('/\s+/', ' ', $match[0]));
+						$id = $linearray[1];
+						$x = $linearray[2]; $max_x = max($x, $max_x);
+						$y = $linearray[3]; $max_y = max($y, $max_y);
+						$demand = $linearray[4];   $twOpen = $linearray[5];
+						$twClose = $linearray[6];  $service = $linearray[7];
+
+						if($id == 0 && $twClose == 0) break;
+						if($id == 0) {
+							$depot_point = "          data.addRow([$x,null,null,$y,'Depot']);\n";
+							echo "          data.addRow([$x,$y,'Depot',null,null]);\n";
+							//echo $back_to_depot;
+						}
+						else {
+							echo "          data.addRow([$x,$y,'Customer:$id',null,null]);\n";
+							echo "          infos.addRow([$twOpen, $twClose, $service, $demand]);\n";
+						}
+					}
+					echo $depot_point;
+					fclose($mySolutionFile);
+					fclose($myInstanceFile);
+				} else {
+					$name = trim( fgets($myInstanceFile) );
+					for ($i = 1; $i < 4; $i++) fgets($myInstanceFile);
+					$linearray = explode(" ", preg_replace('/\s+/', ' ',fgets($myInstanceFile)));
+					$n = $linearray[1]; $q = $linearray[2];
+					for ($i = 0; $i < 4; $i++) fgets($myInstanceFile);
+					$max_x = 0; $max_y = 0;
+					while(!feof($myInstanceFile)) {
+						$linearray = explode(" ", preg_replace('/\s+/', ' ', fgets($myInstanceFile)));
+						echo "//".implode('_', $linearray)."\n";
+						$id = $linearray[1];
+						echo "//id : ".$id."\n";
+						$x = $linearray[2]; $max_x = max($x, $max_x);
+						echo "//x : ".$id."\n";
+						$y = $linearray[3]; $max_y = max($y, $max_y);
+						echo "//y : ".$id."\n";
+						$demand = $linearray[4];   $twOpen = $linearray[5];
+						echo "//demand : ".$demand."\n";
+						echo "//twOpen : ".$twOpen."\n";
+						$twClose = $linearray[6];  $service = $linearray[7];
+						echo "//twClose : ".$twClose."\n";
+						echo "//service : ".$service."\n";
+						if($id == 0 && $twClose == 0) break;
+						if($id == 0) {
+							echo "          data.addRow([$x,null,null,$y,'Depot']);\n";
+							$back_to_depot = "          data.addRow([$x,$y,'Depot',null,null]);\n";
+							echo $back_to_depot;
+						}
+						else {
+							echo "          data.addRow([$x,$y,'Customer:$id',null,null]);\n";
+							echo "          infos.addRow([$twOpen, $twClose, $service, $demand]);\n";
+						}
+					}
+					echo $back_to_depot;
+					fclose($myInstanceFile);
+				}
 			?>
 			var options = {
 				//title: 'Instance <?php echo $name; ?> (n=<?php echo $n; ?>, Q=<?php echo $q; ?>)',
@@ -61,11 +134,12 @@
 				pointSize: 5,
 				series: {
 					0: {
-						lineWidth: 1
+						// Display line only if solution was found
+						lineWidth: <?php if ($solution) { echo "1"; } else { echo "0";} ?>
 					},
 					1: {
 						pointSize: 10,
-						lineWidth: 1
+						lineWidth: <?php if ($solution) { echo "1"; } else { echo "0";} ?>
 					}
 				}
 			};
