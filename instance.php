@@ -43,7 +43,6 @@
 						echo"			data.addColumn({type:'string', role:'tooltip'});\n";
 					}
 					$solution_points = explode(' ', trim($solution_points));
-					//echo "//".implode('_', $solution_points)."\n";
 				} else {
 					echo"			data.addColumn('number', 'customers');\n";
 					echo"			data.addColumn({type:'string', role:'tooltip'});\n";
@@ -84,8 +83,8 @@
 
 						if($id == 0 && $twClose == 0) break;
 						if($id == 0) {
+							$depot_values = array($twOpen, $twClose, $service, $demand);
 							$depot_point = "          data.addRow([$x,".str_repeat("null,null,", $lines_number)."$y,'Depot']);\n";
-							//echo "          data.addRow([$x,$y,'Depot'".str_repeat(",null,null", $lines_number)."]);\n";
 							if ($current_series == -1) {
 								echo "          data.addRow([$x".str_repeat(",null,null", $current_series).",$y,'Depot'".str_repeat(",null,null", $lines_number)."]);\n";	
 							} else {
@@ -96,14 +95,13 @@
 								}
 							}
 							$reached_zero = true;
-							//echo $back_to_depot;
+							echo "          infos.addRow([$twOpen, $twClose, $service, $demand]);\n";
 						}
 						else {
 							if ($reached_zero) {
 								$current_series++;
 								$reached_zero = false;
 							}
-							echo "//".$current_series."\n";
 							echo "          data.addRow([$x".str_repeat(",null,null", $current_series).",$y,'Customer:$id'".str_repeat(",null,null", $lines_number - $current_series)."]);\n";
 							echo "          infos.addRow([$twOpen, $twClose, $service, $demand]);\n";
 						}
@@ -120,24 +118,19 @@
 					$max_x = 0; $max_y = 0;
 					while(!feof($myInstanceFile)) {
 						$linearray = explode(" ", preg_replace('/\s+/', ' ', fgets($myInstanceFile)));
-						echo "//".implode('_', $linearray)."\n";
 						$id = $linearray[1];
-						echo "//id : ".$id."\n";
 						$x = $linearray[2]; $max_x = max($x, $max_x);
-						echo "//x : ".$id."\n";
 						$y = $linearray[3]; $max_y = max($y, $max_y);
-						echo "//y : ".$id."\n";
 						$demand = $linearray[4];   $twOpen = $linearray[5];
-						echo "//demand : ".$demand."\n";
-						echo "//twOpen : ".$twOpen."\n";
 						$twClose = $linearray[6];  $service = $linearray[7];
-						echo "//twClose : ".$twClose."\n";
-						echo "//service : ".$service."\n";
 						if($id == 0 && $twClose == 0) break;
 						if($id == 0) {
+							$depot_values = array($twOpen, $twClose, $service, $demand);
 							echo "          data.addRow([$x,null,null,$y,'Depot']);\n";
 							$back_to_depot = "          data.addRow([$x,$y,'Depot',null,null]);\n";
 							echo $back_to_depot;
+							echo "          infos.addRow([$twOpen, $twClose, $service, $demand]);\n";
+							echo "          infos.addRow([$twOpen, $twClose, $service, $demand]);\n";
 						}
 						else {
 							echo "          data.addRow([$x,$y,'Customer:$id',null,null]);\n";
@@ -152,8 +145,8 @@
 				//title: 'Instance <?php echo $name; ?> (n=<?php echo $n; ?>, Q=<?php echo $q; ?>)',
 				width: 1200,
 				height: 1200,
-				vAxis: {viewWindow: {min: 0, max: <?php echo $max_x; ?>} , baselineColor:'white', textStyle:{color:'white'}},
-				hAxis: {viewWindow: {min: 0, max: <?php echo $max_y; ?>} , baselineColor:'white', textStyle:{color:'white'}},
+				vAxis: {viewWindow: {min: 0, max: <?php echo $max_x + 10; ?>} , baselineColor:'white', textStyle:{color:'white'}},
+				hAxis: {viewWindow: {min: 0, max: <?php echo $max_y + 10; ?>} , baselineColor:'white', textStyle:{color:'white'}},
 				pointSize: 5,
 				series: {
 					<?php
@@ -172,14 +165,46 @@
 			var chart = new google.visualization.ScatterChart (document.getElementById('chart_instance'));
 			google.visualization.events.addListener(chart, 'select', function () {
 				var selection = chart.getSelection();
+				var current_series = 0;
 				for (var i = 0; i < selection.length; i++) {
-					if(selection[i].row != null){
-						$( "#dialog" ).dialog( "option", "title", "Client " + selection[i].row);
+					try {
+						if(selection[i].row != null){
+							// In case there is no solution, current series is always 0
+							if (1 == <?php if ($solution) { echo 1; } else { echo 0; }?>) {
+								for (var j = 0; j < <?php echo $lines_number*2+3; ?>; j++) {
+									if (j%2 == 0 && data.getValue(selection[i].row, j) != null) {
+										current_series = j/2 - 1;
+									}
+								}
+							}
+							else {
+								current_series = 0;
+							}
+							if (data.getValue(selection[i].row, 2 + 2*current_series) == null) {
+								$( "#dialog" ).dialog( "option", "title", data.getValue(selection[i].row, 4 + 2*current_series));
+								var y = data.getValue(selection[i].row, 3 + 2*current_series);
+							} else {
+								$( "#dialog" ).dialog( "option", "title", data.getValue(selection[i].row, 2 + 2*current_series));
+								var y = data.getValue(selection[i].row, 1 + 2*current_series);
+							}
+							if (data.getValue(selection[i].row, 4 + 2*current_series) == 'Depot' || data.getValue(selection[i].row, 2 + 2*current_series) == 'Depot') {
+								throw "Depot";
+							}
+							$( "#dialog" ).html(
+								"</p><p>x = " + data.getValue(selection[i].row, 0) + " y = " + y + "</p>"
+								+ "<p>Time window  = ["+ infos.getValue(selection[i].row, 0) + ", " + infos.getValue(selection[i].row, 1) + "]</p>"
+								+ "<p>Service time = " + infos.getValue(selection[i].row, 2)
+								+ "<p>Demand       = " + infos.getValue(selection[i].row, 3) );
+							$( "#dialog" ).dialog( "open" );
+						}
+					} catch(err) {
+						// This is a catch instead of a condition because Depot is sometimes out of bounds
+						$( "#dialog" ).dialog( "option", "title", "Depot");
 						$( "#dialog" ).html(
-							"</p><p>x = " + data.getValue(selection[i].row, 0) + " y = " + data.getValue(selection[i].row, 3) + "</p>"
-							+ "<p>Time window  = ["+ infos.getValue(selection[i].row, 0) + ", " + infos.getValue(selection[i].row, 1) + "]</p>"
-							+ "<p>Service time = " + infos.getValue(selection[i].row, 2)
-							+ "<p>Demand       = " + infos.getValue(selection[i].row, 3) );
+							"</p><p>x = " + data.getValue(0, 0) + " y = " + y + "</p>"
+							+ "<p>Time window  = [<?php echo $depot_values[0].','.$depot_values[1];?>]</p>"
+							+ "<p>Service time = " + infos.getValue(0, 2)
+							+ "<p>Demand       = " + infos.getValue(0, 3) );
 						$( "#dialog" ).dialog( "open" );
 					}
 				}
@@ -199,7 +224,6 @@
 				autoOpen: false,
 			});
 		});
-
 		</script>
 		<style>
 		</style>
