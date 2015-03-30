@@ -36,9 +36,12 @@
 					// Let go of first line in solution
 					fgets($mySolutionFile);
 					$solution_points = '';
+					$series_infos = array();
 					$lines_number = explode(" ", fgets($mySolutionFile))[1];
 					for($i = 0; $i < $lines_number; $i++) {
-						$solution_points .=  ' '.trim(fgets($mySolutionFile)).' 0';
+						$line = trim(fgets($mySolutionFile));
+						$series_infos[$i] = explode(" ", trim(explode("|", $line)[0]));
+						$solution_points .=  ' '.trim(explode("|", $line)[1]).' 0';
 						echo"			data.addColumn('number', 'customers series ".$i."');\n";
 						echo"			data.addColumn({type:'string', role:'tooltip'});\n";
 					}
@@ -83,7 +86,7 @@
 
 						if($id == 0 && $twClose == 0) break;
 						if($id == 0) {
-							$depot_values = array($twOpen, $twClose, $service, $demand);
+							$depot_values = array($x, $y, $twOpen, $twClose, $service, $demand);
 							$depot_point = "          data.addRow([$x,".str_repeat("null,null,", $lines_number)."$y,'Depot']);\n";
 							if ($current_series == -1) {
 								echo "          data.addRow([$x".str_repeat(",null,null", $current_series).",$y,'Depot'".str_repeat(",null,null", $lines_number)."]);\n";	
@@ -125,7 +128,7 @@
 						$twClose = $linearray[6];  $service = $linearray[7];
 						if($id == 0 && $twClose == 0) break;
 						if($id == 0) {
-							$depot_values = array($twOpen, $twClose, $service, $demand);
+							$depot_values = array($x, $y, $twOpen, $twClose, $service, $demand);
 							echo "          data.addRow([$x,null,null,$y,'Depot']);\n";
 							$back_to_depot = "          data.addRow([$x,$y,'Depot',null,null]);\n";
 							echo $back_to_depot;
@@ -161,7 +164,17 @@
 					?>
 				}
 			};
-
+			var series_infos = { <?php
+				foreach ($series_infos as $key => $value_ext) {
+					echo $key.": [";
+					foreach ($value_ext as $value_in) {
+						echo $value_in.",";
+					}
+					echo "],\n";
+				}
+			?>};
+			console.log(series_infos);
+			var view = new google.visualization.DataView(data);
 			var chart = new google.visualization.ScatterChart (document.getElementById('chart_instance'));
 			google.visualization.events.addListener(chart, 'select', function () {
 				var selection = chart.getSelection();
@@ -196,15 +209,25 @@
 								+ "<p>Service time = " + infos.getValue(selection[i].row, 2)
 								+ "<p>Demand       = " + infos.getValue(selection[i].row, 3) );
 							$( "#dialog" ).dialog( "open" );
+						} else {
+							if (1 == <?php if ($solution) { echo 1; } else { echo 0; }?>) {
+								var s = (view.getTableColumnIndex(chart.getSelection()[0]['column']) - 1)/2;
+								$( "#dialog" ).dialog( "option", "title", "Series number " + s);
+								$( "#dialog" ).html(
+									"</p><p>Info n°1 : " + series_infos[s][0] + "</p>"
+									+ "<p>Info n°2 : " + series_infos[s][1] + "</p>"
+									+ "<p>Info n°3 : " + series_infos[s][2] + "</p>");
+								$( "#dialog" ).dialog( "open" );
+							}
 						}
 					} catch(err) {
 						// This is a catch instead of a condition because Depot is sometimes out of bounds
 						$( "#dialog" ).dialog( "option", "title", "Depot");
 						$( "#dialog" ).html(
-							"</p><p>x = " + data.getValue(0, 0) + " y = " + y + "</p>"
-							+ "<p>Time window  = [<?php echo $depot_values[0].','.$depot_values[1];?>]</p>"
-							+ "<p>Service time = " + infos.getValue(0, 2)
-							+ "<p>Demand       = " + infos.getValue(0, 3) );
+							"</p><p>x = " + <?php echo $depot_values[0]; ?> + " y = " + <?php echo $depot_values[1]; ?> + "</p>"
+							+ "<p>Time window  = [<?php echo $depot_values[2].','.$depot_values[3];?>]</p>"
+							+ "<p>Service time = " + <?php echo $depot_values[4]; ?>
+							+ "<p>Demand       = " + <?php echo $depot_values[5]; ?>);
 						$( "#dialog" ).dialog( "open" );
 					}
 				}
