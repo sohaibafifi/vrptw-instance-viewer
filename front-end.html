@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-gb" lang="en-gb" >
+<head>
+<meta charset="UTF-8">
+<title>Plotted Instances</title>
+<script src="https://www.google.com/jsapi" type="text/javascript"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+<script src="JS/jquery-1.11.3.min.js"></script>
+<script src="JS/jquery-ui.js"></script>
+<script>
+    window.$ = window.jQuery = require("JS/jquery-1.11.3.js");
+</script>
+<link rel="stylesheet" href="CSS/jquery-ui.min.css">
+
+
+<script type="text/javascript">
+    google.load('visualization', '1.1', {'packages':['annotationchart']});  
+    function drawChartPoint(data_boat){  
+        var data = new google.visualization.DataTable();
+        data.addColumn('number', 'x');
+
+        //Error
+    
+        eval(data_boat.com_add_1);
+
+        data.addColumn('number', 'depot');
+        data.addColumn({type:'string', role:'tooltip'}); // annotation role col.
+        var infos = new google.visualization.DataTable();
+        infos.addColumn('number', 'twOpen');
+        infos.addColumn('number', 'twClose');
+        infos.addColumn('number', 'service');
+        infos.addColumn('number', 'demand');
+
+        eval(data_boat.com_add_2);
+
+
+
+
+
+        var options = {
+        //title: 'Instance <?php echo $name; ?> (n=<?php echo $n; ?>, Q=<?php echo $q; ?>)',
+                width: 1200,
+                height: 1200,
+                vAxis: {viewWindow: {min: 0, max: (parseInt(data_boat.max_x) + 10)} , baselineColor:'grey', textStyle:{color:'grey'}},
+                hAxis: {viewWindow: {min: 0, max: (parseInt(data_boat.max_y) + 10)} , baselineColor:'grey', textStyle:{color:'grey'}},
+                pointSize: 5,
+                series:  data_boat.com_options_series
+                            
+                
+        };
+        var series_infos = data_boat.com_series_infos
+        console.log(series_infos);
+        var view = new google.visualization.DataView(data);
+        var chart = new google.visualization.ScatterChart (document.getElementById('chart_instance'));
+        google.visualization.events.addListener(chart, 'select', function () {
+                                            var selection = chart.getSelection();
+                                            var current_series = 0;
+                                            for (var i = 0; i < selection.length; i++) {
+                                            try {
+                                            if(selection[i].row != null){
+                                            // In case there is no solution, current series is always 0
+                                            if (data_boat.solution) {
+                                            for (var j = 0; j < (data_boat.lines_number*2+3); j++) {
+                                            if (j%2 == 0 && data.getValue(selection[i].row, j) != null) {
+                                            current_series = j/2 - 1;
+                                            }
+                                            }
+                                            }
+                                            else {
+                                            current_series = 0;
+                                            }
+                                            if (data.getValue(selection[i].row, 2 + 2*current_series) == null) {
+                                            $( "#dialog" ).dialog( "option", "title", data.getValue(selection[i].row, 4 + 2*current_series));
+                                            var y = data.getValue(selection[i].row, 3 + 2*current_series);
+                                            } else {
+                                            $( "#dialog" ).dialog( "option", "title", data.getValue(selection[i].row, 2 + 2*current_series));
+                                            var y = data.getValue(selection[i].row, 1 + 2*current_series);
+                                            }
+                                            if (data.getValue(selection[i].row, 4 + 2*current_series) == 'Depot' || data.getValue(selection[i].row, 2 + 2*current_series) == 'Depot') {
+                                            throw "Depot";
+                                            }
+                                            $( "#dialog" ).html(
+                                                                "</p><p>x = " + data.getValue(selection[i].row, 0) + " y = " + y + "</p>"
+                                                                + "<p>Time window  = ["+ infos.getValue(selection[i].row, 0) + ", " + infos.getValue(selection[i].row, 1) + "]</p>"
+                                                                + "<p>Service time = " + infos.getValue(selection[i].row, 2)
+                                                                + "<p>Demand       = " + infos.getValue(selection[i].row, 3) );
+                                            $( "#dialog" ).dialog( "open" );
+                                            } else {
+                                            if (data_boat.solution){
+                                            var s = (view.getTableColumnIndex(chart.getSelection()[0]['column']) - 1)/2;
+                                            $( "#dialog" ).dialog( "option", "title", "Series number " + s);
+                                            $( "#dialog" ).html(
+                                                                "</p><p>Info n°1 : " + series_infos[s][0] + "</p>"
+                                                                + "<p>Info n°2 : " + series_infos[s][1] + "</p>"
+                                                                + "<p>Info n°3 : " + series_infos[s][2] + "</p>");
+                                            $( "#dialog" ).dialog( "open" );
+                                            }
+                                            }
+                                            } catch(err) {
+                                            // This is a catch instead of a condition because Depot is sometimes out of bounds
+                                            $( "#dialog" ).dialog( "option", "title", "Depot");
+                                            $( "#dialog" ).html(
+                                                                "</p><p>x = " + data_boat.depot_values[0]+ " y = " + data_boat.depot_values[1] + "</p>"
+                                                                + "<p>Time window  = ["+data_boat.depot_values[2].concat(data_boat.depot_values[3])+"]</p>"
+                                                                + "<p>Service time = " + data_boat.depot_values[4]
+                                                                + "<p>Demand       = " + data_boat.depot_values[5]);
+                                            $( "#dialog" ).dialog( "open" );
+                                            }
+                                            }
+                                            });
+        chart.draw(data, options);
+    };
+</script>
+    
+
+<link href='http://fonts.googleapis.com/css?family=Oswald' rel='stylesheet' type='text/css' />
+<script>
+$(function() {
+  $( "#dialog" ).dialog({
+                        autoOpen: false,
+                        });
+        });
+</script>
+<style>
+</style>
+</head>
+<body class="contentpane">
+<div class="container">
+<div class="page-header">
+<div id="div_title" style="font-size:40px">Instance </div>
+</div>
+<div class="form-group">
+<form id="file-form" action="/" enctype="multipart/form-data" method="POST">
+    <input type="hidden" name="max_file_size" value="33554432">
+    <p>Please upload your solomon file</p>
+    <input type="file" id="file_solomon"  name="file[]">
+    <br>
+    <p>Please upload your solution file (keep it empty if no solutions)</p>
+    <input type="file" id="file-solution" name="file[]">
+    <br>
+    <input type="submit" id="upload-button" value="Upload">
+</form>
+</div>
+<script>
+    var form = document.getElementById('file-form');
+    var fileSolomon = document.getElementById('file_solomon');
+    var fileSolution = document.getElementById('file-solution');
+    var uploadButton = document.getElementById('upload-button');
+    //var data_boat;
+    form.onsubmit = function(event) {
+        event.preventDefault();
+        var files = fileSolomon.files+fileSolution.files;
+        var fd = new FormData();
+
+        // Check the file type.
+           
+          // Add the file to the request.
+          fd.append("file_solomon", fileSolomon.files[0]);
+          fd.append("file_solution", fileSolution.files[0]);
+        
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'http://localhost/back-end.php', true);
+        xhr.onload = function () {
+        if (xhr.status === 200) {
+            // File(s) uploaded.
+
+             window.data_boat = JSON.parse(xhr.responseText);
+             google.setOnLoadCallback(drawChartPoint(data_boat));
+             document.getElementById("div_num").innerHTML = data_boat.n;
+             document.getElementById("div_cap").innerHTML = data_boat.q;
+             document.getElementById("div_title").innerHTML = "Instance ";
+             document.getElementById("div_title").innerHTML += data_boat.name;
+             if(data_boat.solution)
+             {
+                document.getElementById("div_title").innerHTML += " with solutions";
+             }
+          } else {
+            alert('An error occurred!');
+          }
+        };
+        xhr.send(fd);
+
+    }
+</script>
+<table style="width:20%">
+  <tr>
+    <td>Number of customers:  </td>
+    <td><div id="div_num"></div></td> 
+  </tr>
+  <tr>
+    <td>Vehicule capacity:  </td>
+    <td><div id="div_cap"></td> 
+  </tr>
+</table>
+
+<div id="dialog" title="Informations"></div>
+<div id="chart_instance" ></div>
+</div>
+</body>
+</html>
