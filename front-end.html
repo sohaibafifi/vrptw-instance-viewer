@@ -4,18 +4,9 @@
 <meta charset="UTF-8">
 <title>Plotted Instances</title>
 <script src="https://www.google.com/jsapi" type="text/javascript"></script>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
-<script src="JS/jquery-1.11.3.min.js"></script>
-<script src="JS/jquery-ui.js"></script>
-<script>
-    window.$ = window.jQuery = require("JS/jquery-1.11.3.js");
-</script>
-<link rel="stylesheet" href="CSS/jquery-ui.min.css">
-
-
 <script type="text/javascript">
     google.load('visualization', '1.1', {'packages':['annotationchart']});  
+    window.$ = window.jQuery = require("./JS/jquery-1.11.3.min.js");
     function drawChartPoint(data_boat){  
         var data = new google.visualization.DataTable();
         data.addColumn('number', 'x');
@@ -113,7 +104,11 @@
     };
 </script>
     
-
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+<link rel="stylesheet" href="CSS/jquery-ui.min.css">
+<script src="JS/jquery-1.11.3.min.js"></script>
+<script src="JS/jquery-ui.js"></script>
 <link href='http://fonts.googleapis.com/css?family=Oswald' rel='stylesheet' type='text/css' />
 <script>
 $(function() {
