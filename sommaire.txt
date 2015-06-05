@@ -1,0 +1,11 @@
+
+Sommaire du rapport TX:
+
+1. Contexte du sujet
+2. Explication des codes existants 
+3. Réalisations graphiques des points et leur chemins
+4. Chargement des fichiers(sources et solutions)
+5. Introduction de Electron
+6. Application Desktop(sur Electron)
+7. Difficultés rencontrées
+8. Conclusion et améliorations possibles
