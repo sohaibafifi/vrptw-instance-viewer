@@ -2,10 +2,15 @@
 Sommaire du rapport TX:
 
 1. Contexte du sujet
-2. Explication des codes existants 
-3. Réalisations graphiques des points et leur chemins
-4. Chargement des fichiers(sources et solutions)
-5. Introduction de Electron
-6. Application Desktop(sur Electron)
-7. Difficultés rencontrées
-8. Conclusion et améliorations possibles
+  1.1 Probleme (VRP, Contraintes ...) 
+  1.2 Solution 
+  1.3 Objectif du projet
+
+2. Architecture de l'application 
+  2.1 Web
+  2.2 Desktop 
+3. Environnement technique utilisé
+4. Tests 
+  4.1 Description des fichiers des données
+  4.2 démostration des résultats (avec scénarios d'utilisation)
+5 Conclusion et perspectives 
